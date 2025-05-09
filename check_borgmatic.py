@@ -1,9 +1,8 @@
 #!/usr/bin/python3
-# 
-# Python3 Nagios/Icinga2 plugin for borgmatic to check the last successful backup
-# 
-# ./check_borgmatic.py -c <seconds> -w <seconds>
 #
+# Python3 Nagios/Icinga2 plugin for borgmatic to check the last successful backup
+#
+# Source: https://github.com/chris2k20/check_borgmatic/blob/master/check_borgmatic.py
 
 version = "0.1"
 
@@ -18,8 +17,8 @@ import argparse
 warn_sec = 86400 # 1 day
 crit_sec = 86400*3 # 3 days
 # the following settings must fit with your sudoers entry:
-borgmatic_bin = "sudo borgmatic"
-borgmatic_parameters = "--list --successful --last 1 --json"
+borgmatic_bin = "sudo /usr/bin/borgmatic"
+borgmatic_parameters = "list --last 1 --json"
 
 # init the parser
 parser = argparse.ArgumentParser(description='nagios/icinga2 plugin for borgmatic to check the last successful backup.')
@@ -30,7 +29,7 @@ parser.add_argument("-w", "--warning", type=int, metavar='seconds', help="warnin
 args = parser.parse_args()
 # check for --version
 if args.version:
-  print("check_borgmatic.py - Version:", version)
+  print("check_borg - Version:", version)
   sys.exit(0)
 # check for --critical
 if args.critical:
@@ -40,7 +39,7 @@ if args.warning:
   warn_sec = int(args.warning)
 
 # Plugin start
-# Try to get Data from borgmatic 
+# Try to get Data from borgmatic
 try:
   output = subprocess.check_output(borgmatic_bin+" "+borgmatic_parameters, shell=True)
 except:
@@ -53,12 +52,12 @@ try:
 except:
   print("UNKOWN - can decode borgmatic data!")
   sys.exit(3)
- 
+
 if not data[0]['archives']:
   print("CRITICAL - no successful backup found!")
   sys.exit(2)
 
-last_backup_name = data[0]['archives'][0]['name'] 
+last_backup_name = data[0]['archives'][0]['name']
 last_backup_time_str = data[0]['archives'][0]['time']
 
 last_backup_time = datetime.datetime.strptime(last_backup_time_str, '%Y-%m-%dT%H:%M:%S.%f')
@@ -71,13 +70,13 @@ time_past_sec = round(time_past.total_seconds())
 
 # Check data: seconds
 if time_past_sec < warn_sec:
-  print("OK - last borgmatic backup: %s (age: %s) with name %s | 'lastbackup_s'=%s" % (last_backup_time, time_past, last_backup_name, time_past_sec))  
+  print("OK - last borgmatic backup: %s (age: %s) with name %s | 'lastbackup_s'=%s" % (last_backup_time, time_past, last_backup_name, time_past_sec))
   sys.exit(0)
 elif time_past_sec > warn_sec and time_past_sec < crit_sec:
-  print("WARNING - last borgmatic backup: %s (age: %s) with name %s | 'lastbackup_s'=%s" % (last_backup_time, time_past, last_backup_name, time_past_sec))  
+  print("WARNING - last borgmatic backup: %s (age: %s) with name %s | 'lastbackup_s'=%s" % (last_backup_time, time_past, last_backup_name, time_past_sec))
   sys.exit(1)
 elif time_past_sec > crit_sec:
-  print("CRITICAL - last borgmatic backup: %s (age: %s) with name %s | 'lastbackup_s'=%s" % (last_backup_time, time_past, last_backup_name, time_past_sec))   
+  print("CRITICAL - last borgmatic backup: %s (age: %s) with name %s | 'lastbackup_s'=%s" % (last_backup_time, time_past, last_backup_name, time_past_sec))
   sys.exit(2)
 else:
   print("UNKOWN - last borgmatic backup: %s (age: %s) with name %s | 'lastbackup_s'=%s" % (last_backup_time, time_past, last_backup_name, time_past_sec))
